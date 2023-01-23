@@ -1,0 +1,32 @@
+FROM node:16
+
+ENV POSTGRES_USER=admin \
+    POSTGRES_PASSWORD=12345678
+
+RUN apt-get -y update && apt-get -y install postgresql postgresql-contrib
+
+ENV PGPASSWORD=12345678 
+
+RUN touch ~/.pgpass && echo db:5432:postgres:12345678 > ~/.pgpass
+
+RUN chmod 0600 ~/.pgpass
+
+# choose workdir
+WORKDIR /app
+
+# set environment db variable
+ENV DATABASE_URL=
+
+# set NODE_ENV var
+ARG NODE_ENV=development
+ENV NODE_ENV=${NODE_ENV}
+
+
+# install app dependencies
+COPY package.json /app
+RUN yarn install
+RUN npx prisma generate
+
+
+# run app
+CMD export NODE_ENV=${NODE_ENV} && echo "DATABASE_URL=${DATABASE_URL}" >> .env && npx prisma migrate deploy && yarn start:dev
